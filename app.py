@@ -1,3 +1,4 @@
+import difflib
 import hashlib
 
 import streamlit as st
@@ -202,6 +203,78 @@ def normalize_difference(item):
         "document_a": "See the evidence section below.",
         "document_b": "See the evidence section below.",
     }
+
+
+def render_side_by_side_diff(document_a_text: str, document_b_text: str):
+    """Render an aligned, line-level visual diff for the compared documents."""
+
+    document_a_lines = document_a_text.splitlines() or [""]
+    document_b_lines = document_b_text.splitlines() or [""]
+    matcher = difflib.SequenceMatcher(None, document_a_lines, document_b_lines)
+    added_lines = sum(
+        b2 - b1
+        for tag, _a1, _a2, b1, b2 in matcher.get_opcodes()
+        if tag in {"insert", "replace"}
+    )
+    removed_lines = sum(
+        a2 - a1
+        for tag, a1, a2, _b1, _b2 in matcher.get_opcodes()
+        if tag in {"delete", "replace"}
+    )
+
+    diff_table = difflib.HtmlDiff(tabsize=4, wrapcolumn=72).make_table(
+        document_a_lines,
+        document_b_lines,
+        fromdesc="Document A",
+        todesc="Document B",
+        context=True,
+        numlines=3,
+    )
+    st.caption(
+        f"Showing nearby changes with 3 lines of context · "
+        f"{added_lines} added · {removed_lines} removed"
+    )
+    st.html(
+        f"""
+        <style>
+        .doc-diff {{
+            overflow-x: auto;
+            border: 1px solid #1e3a50;
+            border-radius: 10px;
+            background: #081522;
+        }}
+        .doc-diff table.diff {{
+            width: 100%;
+            border-collapse: collapse;
+            color: #dbeafe;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 0.82rem;
+        }}
+        .doc-diff th {{
+            padding: 0.7rem;
+            background: #10263a;
+            color: #99f6e4;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }}
+        .doc-diff td {{
+            padding: 0.35rem 0.55rem;
+            border-top: 1px solid rgba(30, 58, 80, 0.65);
+            vertical-align: top;
+            white-space: pre-wrap;
+        }}
+        .doc-diff .diff_header {{ color: #7dd3fc; }}
+        .doc-diff .diff_next {{ display: none; }}
+        .doc-diff .diff_add {{ background: rgba(20, 184, 166, 0.24); }}
+        .doc-diff .diff_sub {{ background: rgba(248, 113, 113, 0.24); }}
+        .doc-diff .diff_chg {{ background: rgba(250, 204, 21, 0.26); }}
+        </style>
+        <div class="doc-diff" aria-label="Side-by-side document differences">
+            {diff_table}
+        </div>
+        """
+    )
 
 
 st.set_page_config(
@@ -939,11 +1012,12 @@ if comparison_result:
     st.header("Comparison results", anchor=False, icon=":material/insights:")
     st.caption("Move through the sections below to review the AI-generated findings.")
 
-    summary_a, summary_b, similarities, differences, details, risks, evidence, conclusion = (
+    summary_a, summary_b, visual_diff, similarities, differences, details, risks, evidence, conclusion = (
         st.tabs(
             [
                 "Summary A",
                 "Summary B",
+                "Visual diff",
                 "Similarities",
                 "Differences",
                 "Key details",
@@ -959,6 +1033,19 @@ if comparison_result:
 
     with summary_b:
         st.write(comparison_result["document_b_summary"])
+
+    with visual_diff:
+        comparison_texts = st.session_state.get("comparison_document_texts")
+        if comparison_texts:
+            render_side_by_side_diff(
+                comparison_texts["document_a"],
+                comparison_texts["document_b"],
+            )
+        else:
+            st.info(
+                "The original document text is unavailable for this comparison.",
+                icon=":material/info:",
+            )
 
     with similarities:
         for item in comparison_result["similarities"]:
