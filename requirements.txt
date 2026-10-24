@@ -1,0 +1,5 @@
+streamlit[auth]
+pypdf
+python-dotenv
+python-docx
+google-genai

@@ -1,0 +1,29 @@
+[theme]
+base = "dark"
+primaryColor = "#2dd4bf"
+backgroundColor = "#07111f"
+secondaryBackgroundColor = "#0d1b2a"
+textColor = "#e6edf5"
+font = "sans-serif"
+headingFont = "sans-serif"
+baseRadius = "0.65rem"
+buttonRadius = "0.55rem"
+showWidgetBorder = true
+showSidebarBorder = true
+paddingTop = "2rem"
+paddingBottom = "2.5rem"
+linkUnderline = false
+
+[theme.sidebar]
+backgroundColor = "#081522"
+secondaryBackgroundColor = "#102235"
+textColor = "#dbe7f2"
+borderColor = "#1e3a50"
+primaryColor = "#2dd4bf"
+
+[server]
+# Allow other devices on the same local network to open the app.
+address = "0.0.0.0"
+# Open the app in the local browser when Streamlit starts.
+headless = false
+port = 8501

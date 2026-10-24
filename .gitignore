@@ -1,0 +1,8 @@
+.venv/
+.env
+.streamlit/secrets.toml
+data/
+__pycache__/
+*.pyc
+.pytest_cache/
+AI-Document-Comparison-Assistant-Submission.zip

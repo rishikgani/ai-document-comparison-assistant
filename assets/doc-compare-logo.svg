@@ -1,0 +1,9 @@
+<svg width="520" height="120" viewBox="0 0 520 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4" y="12" width="96" height="96" rx="24" fill="#8B2BE2"/>
+  <path d="M31 31H58L73 46V84C73 87.314 70.314 90 67 90H31C27.6863 90 25 87.314 25 84V37C25 33.6863 27.6863 31 31 31Z" fill="white" fill-opacity="0.96"/>
+  <path d="M58 31V46H73" fill="#F0ABFC"/>
+  <path d="M34 59H64M34 69H53" stroke="#8B2BE2" stroke-width="5" stroke-linecap="round"/>
+  <path d="M60 69L66 75L76 64" stroke="#34D399" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="124" y="58" fill="#F5D0FE" font-family="Arial, sans-serif" font-size="30" font-weight="700">Doc Compare</text>
+  <text x="126" y="86" fill="#C4B5FD" font-family="Arial, sans-serif" font-size="16" font-weight="400">AI document comparison</text>
+</svg>
