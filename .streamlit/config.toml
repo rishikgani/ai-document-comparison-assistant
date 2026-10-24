@@ -24,6 +24,6 @@ primaryColor = "#2dd4bf"
 [server]
 # Allow other devices on the same local network to open the app.
 address = "0.0.0.0"
-# Open the app in the local browser when Streamlit starts.
-headless = false
+# Cloud hosts should run without trying to open a local browser.
+headless = true
 port = 8501
