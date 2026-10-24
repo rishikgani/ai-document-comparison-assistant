@@ -1,6 +1,12 @@
 # AI Document Comparison Assistant
 
-An AI-powered Streamlit application that compares two documents using Gemini.
+An AI-powered Streamlit workspace for understanding what changed between two
+documents.
+
+**Live demo:** [ai-document-comparison-assistant.streamlit.app](https://ai-document-comparison-assistant.streamlit.app)
+
+Compare contracts, policies, proposals, requirements, and everyday documents
+with AI-generated summaries, evidence, risks, and a visual side-by-side diff.
 
 ## Features
 
@@ -10,12 +16,16 @@ An AI-powered Streamlit application that compares two documents using Gemini.
 - Generate a summary for each document
 - Identify similarities
 - Identify meaningful differences
+- View a highlighted side-by-side visual diff
 - Classify differences by severity and category
 - Review each change side by side with Document A and Document B values
 - Filter findings by severity and category
 - Compare dates, names, amounts, and requirements
 - Display limitations and missing information
 - Download a Word comparison report
+- Ask evidence-backed questions about both documents
+- Sign in with Google or Microsoft
+- Save comparison history and manage user profiles
 
 ## Technologies
 
@@ -25,6 +35,11 @@ An AI-powered Streamlit application that compares two documents using Gemini.
 - Gemini API
 - python-dotenv
 - python-docx
+
+## Screenshots
+
+The live workspace includes document upload, AI comparison results, severity
+filters, source citations, a visual diff, report download, and document chat.
 
 ## Project structure
 
@@ -139,6 +154,9 @@ use persistent storage if comparison history must survive redeployments.
 4. Review the summaries, similarities, differences, key details, and conclusion.
 5. Click **Download comparison report**.
 
+The **Visual diff** tab highlights added, removed, and changed lines with
+nearby context from both documents.
+
 ## Limitations
 
 - Scanned image-only PDFs may not contain readable text.
@@ -175,4 +193,4 @@ treated as a regular user account.
 
 - Add document chunking for long files.
 - Add PDF report export.
-- Add automated tests.
+- Add richer clause-level highlighting.
