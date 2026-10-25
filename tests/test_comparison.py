@@ -5,6 +5,7 @@ from comparison import (
     COMPARISON_RETRY_ATTEMPTS,
     _is_model_unavailable_error,
     _is_retryable_error,
+    _normalize_response_text,
 )
 
 
@@ -27,6 +28,16 @@ class ComparisonRetryTests(unittest.TestCase):
             ("gemini-3.5-flash-lite", "gemini-3.8-flash"),
         )
         self.assertEqual(COMPARISON_RETRY_ATTEMPTS, 2)
+
+    def test_normalizes_markdown_json_responses(self):
+        self.assertEqual(
+            _normalize_response_text("```json\n{\"answer\": \"ok\"}\n```"),
+            '{"answer": "ok"}',
+        )
+        self.assertEqual(
+            _normalize_response_text("  ```\n{\"status\": \"ready\"}\n```  "),
+            '{"status": "ready"}',
+        )
 
 
 if __name__ == "__main__":

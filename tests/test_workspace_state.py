@@ -15,6 +15,14 @@ class WorkspaceStateTests(unittest.TestCase):
             self.assertNotIn(key, state)
         self.assertEqual(state["analysis_mode"], "Compare two documents")
         self.assertEqual(state["profile_setting"], "keep")
+        self.assertEqual(state["workspace_reset_id"], 1)
+
+    def test_clear_workspace_increments_widget_reset_id(self):
+        state = {"workspace_reset_id": 3}
+
+        clear_workspace_state(state)
+
+        self.assertEqual(state["workspace_reset_id"], 4)
 
 
 if __name__ == "__main__":

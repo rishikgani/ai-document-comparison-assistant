@@ -3,6 +3,7 @@ import hashlib
 
 import streamlit as st
 
+from auth_utils import get_account_identity
 from comparison import (
     analyze_document,
     ask_compared_documents,
@@ -17,9 +18,12 @@ from user_data import (
     get_all_history,
     get_host_summary,
     get_history,
+    get_signed_in_accounts,
+    clear_history,
     has_seen_workspace_reminder,
     initialize_database,
     mark_workspace_reminder_seen,
+    record_sign_in,
     save_avatar,
     save_comparison,
 )
@@ -80,6 +84,14 @@ def _cache_comparison(document_a_text: str, document_b_text: str, result):
     cache[_comparison_cache_key(document_a_text, document_b_text)] = result
     while len(cache) > 5:
         cache.pop(next(iter(cache)))
+
+
+def _clear_user_history(user_email: str):
+    """Clear saved history for the signed-in user after explicit confirmation."""
+
+    clear_history(user_email)
+    st.session_state["confirm_history_clear"] = False
+    st.session_state["history_cleared_notice"] = True
 
 
 def extract_text_cached(file_name: str, file_bytes: bytes, cache_key: str):
@@ -512,15 +524,31 @@ if not st.user.is_logged_in:
                 st.login("microsoft")
 
     st.info(
-        "Your password is handled by Google or Microsoft. This app never sees or stores it. Uploaded files are not stored.",
+        "Your password is handled by Google or Microsoft. This app never sees or stores it. "
+        "The host can see your account email, sign-in provider, and last sign-in time. "
+        "Uploaded files are not stored.",
         icon=":material/security:",
     )
     st.stop()
 
-user_email = getattr(st.user, "email", "").strip().lower()
+try:
+    account_identity = get_account_identity(st.user)
+except ValueError as error:
+    st.error(str(error))
+    st.stop()
+
+user_email = account_identity["email"]
 is_host = user_email in get_host_emails()
 account_role = "Host" if is_host else "User"
 initialize_database()
+
+if st.session_state.get("_tracked_sign_in_email") != user_email:
+    record_sign_in(
+        user_email,
+        account_identity["display_name"],
+        account_identity["provider"],
+    )
+    st.session_state["_tracked_sign_in_email"] = user_email
 
 # Show this onboarding reminder once per account, even after the user returns
 # in a new browser session. The button also works when another view is open.
@@ -541,7 +569,7 @@ selected_avatar = get_avatar(user_email)
 
 with st.sidebar:
     st.image(AVATAR_OPTIONS[selected_avatar], width=52, alt="Profile avatar")
-    st.caption(f"Signed in as {st.user.email}")
+    st.caption(f"Signed in as {user_email}")
     if is_host:
         st.success("Host account", icon=":material/admin_panel_settings:")
     else:
@@ -561,6 +589,8 @@ with st.sidebar:
 if selected_view == "History":
     st.header("Comparison history", anchor=False, icon=":material/history:")
     st.caption("Your recent comparisons are private to your signed-in account.")
+    if st.session_state.pop("history_cleared_notice", False):
+        st.success("Your comparison history has been cleared.")
     history = get_history(user_email)
 
     if not history:
@@ -569,6 +599,21 @@ if selected_view == "History":
             icon=":material/history_toggle_off:",
         )
     else:
+        with st.container(border=True):
+            st.caption("Clearing the workspace does not delete saved history.")
+            confirm_history_clear = st.checkbox(
+                "I understand this permanently deletes all my saved comparison history.",
+                key="confirm_history_clear",
+            )
+            st.button(
+                "Clear my history",
+                disabled=not confirm_history_clear,
+                type="primary",
+                icon=":material/delete:",
+                on_click=_clear_user_history,
+                args=(user_email,),
+            )
+
         for record in history:
             with st.container(border=True):
                 st.subheader(
@@ -611,10 +656,13 @@ if selected_view == "Profile":
 
     with details_column:
         with st.container(border=True):
-            st.write(f"**Email**  {st.user.email}")
+            st.write(f"**Email**  {user_email}")
             st.write(f"**Account type**  {account_role}")
             st.write(f"**Comparisons saved**  {len(get_history(user_email))}")
-            st.caption("Only comparison metadata and conclusions are saved. Uploaded files are not stored.")
+            st.caption(
+                "Comparison metadata and conclusions are saved. The host can see "
+                "your email, sign-in provider, and last sign-in time. Uploaded files are not stored."
+            )
     st.stop()
 
 if selected_view == "Host dashboard" and is_host:
@@ -622,9 +670,29 @@ if selected_view == "Host dashboard" and is_host:
     st.caption("A private overview of activity across all signed-in users.")
 
     summary = get_host_summary()
-    user_metric, comparison_metric = st.columns(2)
+    accounts = get_signed_in_accounts()
+    account_metric, user_metric, comparison_metric = st.columns(3)
+    account_metric.metric("Signed-in accounts", len(accounts))
     user_metric.metric("Users with comparisons", summary["users"])
     comparison_metric.metric("Total comparisons", summary["comparisons"])
+
+    st.subheader("Signed-in accounts", anchor=False, icon=":material/group:")
+    if accounts:
+        for account in accounts:
+            with st.container(border=True):
+                st.markdown(f"**{account['display_name']}**")
+                st.caption(account["user_email"])
+                provider_column, last_sign_in_column = st.columns(2)
+                provider_column.write(f"**Provider:** {account['provider']}")
+                last_sign_in_column.write(
+                    "**Last sign-in (UTC):** "
+                    f"{account['last_sign_in'].replace('T', ' ')}"
+                )
+    else:
+        st.info(
+            "No sign-ins have been recorded yet. Accounts will appear here after they sign in again.",
+            icon=":material/person_search:",
+        )
 
     st.subheader("Recent activity", anchor=False, icon=":material/monitoring:")
     all_history = get_all_history()
@@ -653,6 +721,8 @@ with clear_column:
         help="Remove uploaded files and generated results from this session.",
     )
 
+workspace_reset_id = st.session_state.get("workspace_reset_id", 0)
+
 st.caption(
     f"{account_role} workspace · A focused place for understanding what changed between two documents."
 )
@@ -680,7 +750,7 @@ if analysis_mode == "Ask your document":
         question_document = st.file_uploader(
             "Choose a document",
             type=["pdf", "docx", "txt"],
-            key="question_document",
+            key=f"question_document_{workspace_reset_id}",
             label_visibility="collapsed",
         )
 
@@ -712,7 +782,7 @@ if analysis_mode == "Ask your document":
             question = st.chat_input(
                 "Ask a question about this document",
                 disabled=question_document is None,
-                key="document_question_input",
+                key=f"document_question_input_{workspace_reset_id}",
             )
             question = question or st.session_state.pop("suggested_question", None)
 
@@ -778,7 +848,7 @@ if analysis_mode == "Understand one document":
         single_document = st.file_uploader(
             "Choose a document",
             type=["pdf", "docx", "txt"],
-            key="single_document",
+            key=f"single_document_{workspace_reset_id}",
             label_visibility="collapsed",
         )
 
@@ -882,7 +952,10 @@ if analysis_mode == "Understand one document":
         with st.container(border=True):
             st.subheader("Important details", anchor=False, icon=":material/list_alt:")
             if single_result["important_details"]:
-                st.table(single_result["important_details"])
+                for detail in single_result["important_details"]:
+                    with st.container(border=True):
+                        st.markdown(f"**{detail.get('field', 'Detail')}**")
+                        st.write(detail.get("value", "Not specified"))
             else:
                 st.caption("No specific dates, amounts, names, or requirements were identified.")
 
@@ -906,7 +979,7 @@ with left_column:
         document_a = st.file_uploader(
             "Choose a file",
             type=["pdf", "docx", "txt"],
-            key="document_a",
+            key=f"document_a_{workspace_reset_id}",
             label_visibility="collapsed",
         )
 
@@ -917,7 +990,7 @@ with right_column:
         document_b = st.file_uploader(
             "Choose a file",
             type=["pdf", "docx", "txt"],
-            key="document_b",
+            key=f"document_b_{workspace_reset_id}",
             label_visibility="collapsed",
         )
 
@@ -1082,6 +1155,9 @@ if comparison_result:
             ]
             st.caption(f"Showing {len(filtered_items)} of {len(difference_items)} findings.")
 
+            if not filtered_items:
+                st.info("No findings match the selected severity and category filters.", icon=":material/filter_alt:")
+
             for item in filtered_items:
                 severity = item["severity"]
                 if severity == "High":
@@ -1148,11 +1224,13 @@ if comparison_result:
     with conclusion:
         st.write(comparison_result["overall_conclusion"])
 
-        if comparison_result["limitations"]:
+        if comparison_result.get("limitations"):
             st.subheader("Limitations", anchor=False, icon=":material/info:")
 
             for limitation in comparison_result["limitations"]:
                 st.markdown(f":material/warning: {limitation}")
+        else:
+            st.info("No specific limitations were returned for this comparison.", icon=":material/info:")
 
     if document_a is not None and document_b is not None:
         st.header("Take the report with you", anchor=False, icon=":material/download:")

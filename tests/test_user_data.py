@@ -29,6 +29,31 @@ class UserDataTests(unittest.TestCase):
         self.assertTrue(user_data.has_seen_workspace_reminder("one@example.com"))
         self.assertFalse(user_data.has_seen_workspace_reminder("two@example.com"))
 
+    def test_clear_history_deletes_only_the_selected_users_records(self):
+        user_data.initialize_database()
+        user_data.save_comparison("one@example.com", "a.pdf", "b.pdf", "One's conclusion")
+        user_data.save_comparison("two@example.com", "c.pdf", "d.pdf", "Two's conclusion")
+
+        user_data.clear_history("one@example.com")
+
+        self.assertEqual(user_data.get_history("one@example.com"), [])
+        self.assertEqual(len(user_data.get_history("two@example.com")), 1)
+
+    def test_sign_in_records_are_upserted_and_account_scoped(self):
+        user_data.initialize_database()
+        user_data.record_sign_in("one@example.com", "One", "Microsoft")
+        user_data.record_sign_in("two@example.com", "Two", "Google")
+        user_data.record_sign_in("one@example.com", "Updated One", "Microsoft")
+
+        accounts = user_data.get_signed_in_accounts()
+        accounts_by_email = {account["user_email"]: account for account in accounts}
+
+        self.assertEqual(len(accounts), 2)
+        self.assertEqual(accounts_by_email["one@example.com"]["display_name"], "Updated One")
+        self.assertEqual(accounts_by_email["one@example.com"]["provider"], "Microsoft")
+        self.assertTrue(accounts_by_email["one@example.com"]["last_sign_in"])
+        self.assertEqual(accounts_by_email["two@example.com"]["provider"], "Google")
+
     def test_initialize_database_migrates_legacy_profiles(self):
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.database_path)

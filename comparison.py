@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 
 import streamlit as st
@@ -15,6 +16,18 @@ COMPARISON_MODELS = (
     "gemini-3.8-flash",
 )
 COMPARISON_RETRY_ATTEMPTS = 2
+
+
+def _normalize_response_text(response_text):
+    """Strip markdown fences and whitespace around JSON responses."""
+    if response_text is None:
+        return ""
+
+    text = response_text.strip()
+    match = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", text, flags=re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return text
 
 
 def _get_api_key():
@@ -240,19 +253,12 @@ DOCUMENT B:
             ) from last_error
         raise RuntimeError("Gemini did not return a comparison response.")
 
-    response_text = getattr(response, "text", None)
+    response_text = _normalize_response_text(getattr(response, "text", None))
 
-    if not response_text or not response_text.strip():
+    if not response_text:
         raise RuntimeError(
             "Gemini returned an empty response. Try again with shorter PDFs."
         )
-
-    response_text = response_text.strip()
-
-    if response_text.startswith("```"):
-        response_text = response_text.replace("```json", "")
-        response_text = response_text.replace("```", "")
-        response_text = response_text.strip()
 
     try:
         comparison_result = json.loads(response_text)
@@ -342,14 +348,9 @@ DOCUMENT:
     if response is None:
         raise RuntimeError("Gemini did not return an analysis response.")
 
-    response_text = getattr(response, "text", None)
-    if not response_text or not response_text.strip():
+    response_text = _normalize_response_text(getattr(response, "text", None))
+    if not response_text:
         raise RuntimeError("Gemini returned an empty analysis. Try a shorter document.")
-
-    response_text = response_text.strip()
-    if response_text.startswith("```"):
-        response_text = response_text.replace("```json", "")
-        response_text = response_text.replace("```", "").strip()
 
     try:
         return json.loads(response_text)
@@ -405,14 +406,9 @@ DOCUMENT:
             f"{type(error).__name__}: {error}"
         ) from error
 
-    response_text = getattr(response, "text", None)
-    if not response_text or not response_text.strip():
+    response_text = _normalize_response_text(getattr(response, "text", None))
+    if not response_text:
         raise RuntimeError("Gemini returned an empty answer. Please try again.")
-
-    response_text = response_text.strip()
-    if response_text.startswith("```"):
-        response_text = response_text.replace("```json", "")
-        response_text = response_text.replace("```", "").strip()
 
     try:
         return json.loads(response_text)
@@ -465,14 +461,9 @@ DOCUMENT B:
             f"{type(error).__name__}: {error}"
         ) from error
 
-    response_text = getattr(response, "text", None)
-    if not response_text or not response_text.strip():
+    response_text = _normalize_response_text(getattr(response, "text", None))
+    if not response_text:
         raise RuntimeError("Gemini returned an empty comparison answer. Please try again.")
-
-    response_text = response_text.strip()
-    if response_text.startswith("```"):
-        response_text = response_text.replace("```json", "")
-        response_text = response_text.replace("```", "").strip()
 
     try:
         return json.loads(response_text)

@@ -49,6 +49,16 @@ def initialize_database() -> None:
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS account_signins (
+                user_email TEXT PRIMARY KEY,
+                display_name TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                last_sign_in TEXT NOT NULL
+            )
+            """
+        )
         profile_columns = {
             row["name"]
             for row in connection.execute("PRAGMA table_info(user_profiles)")
@@ -57,6 +67,45 @@ def initialize_database() -> None:
             connection.execute(
                 "ALTER TABLE user_profiles ADD COLUMN workspace_reminder_seen INTEGER NOT NULL DEFAULT 0"
             )
+
+
+def record_sign_in(user_email: str, display_name: str, provider: str) -> None:
+    """Save the latest sign-in details for the account."""
+
+    with _database_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO account_signins
+                (user_email, display_name, provider, last_sign_in)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(user_email) DO UPDATE SET
+                display_name = excluded.display_name,
+                provider = excluded.provider,
+                last_sign_in = excluded.last_sign_in
+            """,
+            (
+                user_email,
+                display_name,
+                provider,
+                datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            ),
+        )
+
+
+def get_signed_in_accounts(limit: int = 100) -> list[dict[str, str]]:
+    """Return recent account sign-ins for the private host dashboard."""
+
+    with _database_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT user_email, display_name, provider, last_sign_in
+            FROM account_signins
+            ORDER BY last_sign_in DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 
 def get_avatar(user_email: str) -> str:
@@ -137,6 +186,16 @@ def get_history(user_email: str, limit: int = 25) -> list[dict[str, str]]:
         ).fetchall()
 
     return [dict(row) for row in rows]
+
+
+def clear_history(user_email: str) -> None:
+    """Delete comparison history belonging only to the specified user."""
+
+    with _database_connection() as connection:
+        connection.execute(
+            "DELETE FROM comparison_history WHERE user_email = ?",
+            (user_email,),
+        )
 
 
 def get_host_summary() -> dict[str, int]:

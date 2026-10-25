@@ -45,13 +45,26 @@ filters, source citations, a visual diff, report download, and document chat.
 
 ```text
 ├── app.py
+├── auth_utils.py
 ├── document_reader.py
 ├── comparison.py
 ├── report_generator.py
+├── user_data.py
+├── workspace_state.py
 ├── requirements.txt
 ├── .env.example
 ├── .gitignore
-└── README.md
+├── README.md
+├── assets/
+└── tests/
+    ├── test_auth_utils.py
+    ├── test_comparison.py
+    ├── test_document_reader.py
+    ├── test_report_generator.py
+    ├── test_user_data.py
+    └── test_workspace_state.py
+```
+
 ## Installation
 
 Create and activate a virtual environment:
@@ -81,7 +94,8 @@ Never upload `.env` to GitHub.
 
 The app supports both Google and Microsoft sign-in through OpenID Connect.
 Copy `.streamlit/secrets.example.toml` to `.streamlit/secrets.toml`, then fill
-in the client ID and client secret for each provider you want to enable.
+git commit -m "Prepare project for submission" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+git push origin mainin the client ID and client secret for each provider you want to enable.
 
 Register this callback URL with both providers during local development:
 
@@ -138,8 +152,10 @@ For Streamlit Community Cloud or another hosted Streamlit service:
 2. Set the app entry point to `app.py`.
 3. Configure `GEMINI_API_KEY` in the platform's secrets manager.
 4. Copy the structure from `.streamlit/secrets.example.toml` into the platform secrets manager.
-5. Replace `redirect_uri` with the deployed URL ending in `/oauth2callback`.
-6. Register that exact callback URL with Google and Microsoft.
+5. Set `[auth].redirect_uri` to the deployed URL ending in `/oauth2callback`.
+   For the live demo, this is `https://ai-document-comparison-assistant.streamlit.app/oauth2callback`.
+6. Register that exact URL as a **Web** redirect URI with Google and Microsoft.
+   The scheme, hostname, path, and trailing-slash choice must match exactly.
 7. Add the host email under `[app].host_emails`.
 8. Confirm `.env`, `.streamlit/secrets.toml`, and `data/` are not committed.
 
@@ -171,11 +187,16 @@ nearby context from both documents.
 Signed-in users can open the **Profile** view to see their account identity,
 role, and saved comparison count. The **History** view shows their recent
 comparisons. History is stored locally in `data/app.db`, keyed by signed-in
-email; uploaded files are not stored. Users can also choose a neon avatar
-instead of displaying their personal profile photo.
+email; uploaded files are not stored. Clearing the workspace resets the document
+upload controls and removes generated results but keeps saved history. Users can permanently delete
+their own saved history from the **History** view after confirming. Users can
+also choose a neon avatar instead of displaying their personal profile photo.
 
 Host accounts also receive a private **Host dashboard** with total comparison
-counts and recent activity across signed-in users.
+counts, recent activity, and a list of signed-in accounts with their display
+name, email, provider, and most recent sign-in time. This account metadata is
+recorded once per app session; users are informed on the sign-in page and in
+their profile. Uploaded files and passwords are not stored.
 
 ## Account roles
 
