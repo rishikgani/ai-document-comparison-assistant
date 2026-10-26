@@ -87,6 +87,74 @@ def _json_config(max_output_tokens):
     )
 
 
+def _validate_comparison_result(result):
+    """Validate Gemini's comparison structure before the app renders or exports it."""
+
+    def fail():
+        raise RuntimeError(
+            "Gemini returned a comparison response with an unexpected structure. "
+            "Please try again."
+        )
+
+    def require_string_fields(item, fields):
+        if not isinstance(item, dict):
+            fail()
+        for field in fields:
+            if not isinstance(item.get(field), str) or not item[field].strip():
+                fail()
+
+    if not isinstance(result, dict):
+        fail()
+
+    require_string_fields(
+        result,
+        ("document_a_summary", "document_b_summary", "overall_conclusion"),
+    )
+
+    for field in ("similarities", "limitations", "risk_flags", "deadlines"):
+        values = result.get(field)
+        if not isinstance(values, list) or any(
+            not isinstance(value, str) or not value.strip() for value in values
+        ):
+            fail()
+
+    differences = result.get("differences")
+    if not isinstance(differences, list):
+        fail()
+    for difference in differences:
+        if isinstance(difference, str) and difference.strip():
+            continue
+        require_string_fields(
+            difference,
+            ("title", "category", "severity", "description", "document_a", "document_b"),
+        )
+        if difference["category"].casefold() not in {
+            "addition",
+            "removal",
+            "change",
+            "contradiction",
+        }:
+            fail()
+        if difference["severity"].casefold() not in {"high", "medium", "low"}:
+            fail()
+
+    key_details = result.get("key_details")
+    if not isinstance(key_details, list):
+        fail()
+    for detail in key_details:
+        require_string_fields(detail, ("field", "document_a", "document_b"))
+
+    citations = result.get("source_citations")
+    if not isinstance(citations, list):
+        fail()
+    for citation in citations:
+        require_string_fields(citation, ("finding", "quote", "source"))
+        if citation["source"] not in {"Document A", "Document B"}:
+            fail()
+
+    return result
+
+
 def transcribe_pdf_with_gemini(pdf_bytes):
     """Extract text from a scanned PDF using Gemini's native PDF vision support."""
 
@@ -267,7 +335,7 @@ DOCUMENT B:
             "Gemini returned an invalid comparison response."
         ) from error
 
-    return comparison_result
+    return _validate_comparison_result(comparison_result)
 
 
 def analyze_document(document_text="", pdf_bytes=None):

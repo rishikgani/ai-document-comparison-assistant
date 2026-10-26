@@ -185,11 +185,15 @@ use persistent storage if comparison history must survive redeployments.
 1. Upload Document A.
 2. Upload Document B.
 3. Click **Compare documents**.
-4. Review the summaries, similarities, differences, key details, and conclusion.
-5. Download the comparison as a Word or PDF report.
+4. Confirm the extracted page or unit counts and character counts for both files.
+5. Review the summaries, similarities, differences, key details, and conclusion.
+6. Download the comparison as a Word or PDF report.
 
 The **Visual diff** tab highlights added, removed, and changed lines with
 nearby context from both documents.
+Gemini's structured comparison response is validated before it is displayed or
+included in a report. If the response is malformed or incomplete, the app shows
+an error and allows you to retry the comparison.
 
 To explore the interface without signing in, select **Explore the guided
 demo** on the welcome page. It uses fictional sample policies and preloaded

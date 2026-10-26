@@ -1041,6 +1041,7 @@ if analysis_mode == "Understand one document":
 st.header("Start a comparison", anchor=False, icon=":material/compare_arrows:")
 document_a = None
 document_b = None
+selected_file_names = (None, None)
 
 if is_demo_mode:
     st.info(
@@ -1103,6 +1104,8 @@ else:
         st.session_state.pop("comparison_result", None)
         st.session_state.pop("comparison_document_chat", None)
         st.session_state.pop("comparison_document_texts", None)
+        st.session_state.pop("comparison_extraction_metadata", None)
+        st.session_state.pop("comparison_extraction_file_names", None)
 
 if document_a is not None or document_b is not None:
     selected_files = []
@@ -1111,6 +1114,31 @@ if document_a is not None or document_b is not None:
     if document_b is not None:
         selected_files.append(f"B · {document_b.name}")
     st.success("Files ready: " + "  ·  ".join(selected_files), icon=":material/check_circle:")
+
+if (document_a is None) != (document_b is None):
+    st.info("Upload both documents to begin the comparison.", icon=":material/upload_file:")
+
+comparison_extraction_metadata = st.session_state.get("comparison_extraction_metadata")
+if (
+    comparison_extraction_metadata
+    and st.session_state.get("comparison_extraction_file_names") == selected_file_names
+):
+    st.subheader("Extracted content", anchor=False, icon=":material/text_snippet:")
+    extraction_columns = st.columns(2)
+    for column, document_label, document_name, extraction in zip(
+        extraction_columns,
+        ("Document A", "Document B"),
+        selected_file_names,
+        comparison_extraction_metadata,
+    ):
+        with column:
+            st.metric(
+                f"{document_label} · {extraction['unit_label']}",
+                extraction["unit_count"],
+            )
+            st.caption(
+                f"{document_name} · {extraction['character_count']:,} extracted characters"
+            )
 
 if document_a is not None and document_b is not None:
     st.header("Ready for analysis", anchor=False, icon=":material/auto_awesome:")
@@ -1133,6 +1161,17 @@ if document_a is not None and document_b is not None:
                 st.write(":material/description: Reading both documents")
                 comparison_input_a = extract_document_with_ocr_fallback(document_a)
                 comparison_input_b = extract_document_with_ocr_fallback(document_b)
+                st.session_state["comparison_extraction_file_names"] = selected_file_names
+                st.session_state["comparison_extraction_metadata"] = (
+                    {
+                        key: comparison_input_a[key]
+                        for key in ("unit_label", "unit_count", "character_count")
+                    },
+                    {
+                        key: comparison_input_b[key]
+                        for key in ("unit_label", "unit_count", "character_count")
+                    },
+                )
                 comparison_status.update(
                     label="Documents ready; AI is comparing them...",
                     state="running",
@@ -1175,6 +1214,7 @@ if document_a is not None and document_b is not None:
                     expanded=True,
                 )
                 st.error(str(error))
+
 
 
 comparison_result = st.session_state.get("comparison_result")
