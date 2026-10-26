@@ -1,9 +1,7 @@
-<svg width="520" height="120" viewBox="0 0 520 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="4" y="12" width="96" height="96" rx="24" fill="#8B2BE2"/>
-  <path d="M31 31H58L73 46V84C73 87.314 70.314 90 67 90H31C27.6863 90 25 87.314 25 84V37C25 33.6863 27.6863 31 31 31Z" fill="white" fill-opacity="0.96"/>
-  <path d="M58 31V46H73" fill="#F0ABFC"/>
-  <path d="M34 59H64M34 69H53" stroke="#8B2BE2" stroke-width="5" stroke-linecap="round"/>
-  <path d="M60 69L66 75L76 64" stroke="#34D399" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="124" y="58" fill="#F5D0FE" font-family="Arial, sans-serif" font-size="30" font-weight="700">Doc Compare</text>
-  <text x="126" y="86" fill="#C4B5FD" font-family="Arial, sans-serif" font-size="16" font-weight="400">AI document comparison</text>
+<svg width="520" height="112" viewBox="0 0 520 112" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="8" y="8" width="96" height="96" rx="26" fill="#3157D5"/>
+  <path d="M25 31H37C49 31 56 39 56 56C56 73 49 81 37 81H25V31Z" stroke="white" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M81 39C77 34 72 31 66 31C54 31 48 40 48 56C48 72 54 81 66 81C72 81 77 78 81 73" stroke="#8EF0DD" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="128" y="57" fill="#172033" font-family="Arial, sans-serif" font-size="32" font-weight="700">Doc Compare</text>
+  <text x="130" y="84" fill="#64748B" font-family="Arial, sans-serif" font-size="15" font-weight="400" letter-spacing="0.4">AI DOCUMENT COMPARISON</text>
 </svg>

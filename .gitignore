@@ -1,6 +1,8 @@
 .venv/
 .env
 .streamlit/secrets.toml
+.streamlit/local-cert.pem
+.streamlit/local-key.pem
 data/
 __pycache__/
 *.pyc

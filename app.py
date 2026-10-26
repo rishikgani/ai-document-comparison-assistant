@@ -11,8 +11,9 @@ from comparison import (
     compare_documents,
     transcribe_pdf_with_gemini,
 )
+from demo_data import get_guided_demo
 from document_reader import MAX_TEXT_CHARACTERS, extract_text
-from report_generator import create_report
+from report_generator import create_pdf_report, create_report
 from user_data import (
     get_avatar,
     get_all_history,
@@ -251,36 +252,36 @@ def render_side_by_side_diff(document_a_text: str, document_b_text: str):
         <style>
         .doc-diff {{
             overflow-x: auto;
-            border: 1px solid #1e3a50;
+            border: 1px solid #d9e1f0;
             border-radius: 10px;
-            background: #081522;
+            background: #ffffff;
         }}
         .doc-diff table.diff {{
             width: 100%;
             border-collapse: collapse;
-            color: #dbeafe;
+            color: #172033;
             font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
             font-size: 0.82rem;
         }}
         .doc-diff th {{
             padding: 0.7rem;
-            background: #10263a;
-            color: #99f6e4;
+            background: #eef2ff;
+            color: #233b83;
             text-align: left;
             position: sticky;
             top: 0;
         }}
         .doc-diff td {{
             padding: 0.35rem 0.55rem;
-            border-top: 1px solid rgba(30, 58, 80, 0.65);
+            border-top: 1px solid #e2e8f0;
             vertical-align: top;
             white-space: pre-wrap;
         }}
-        .doc-diff .diff_header {{ color: #7dd3fc; }}
+        .doc-diff .diff_header {{ color: #3157d5; }}
         .doc-diff .diff_next {{ display: none; }}
-        .doc-diff .diff_add {{ background: rgba(20, 184, 166, 0.24); }}
-        .doc-diff .diff_sub {{ background: rgba(248, 113, 113, 0.24); }}
-        .doc-diff .diff_chg {{ background: rgba(250, 204, 21, 0.26); }}
+        .doc-diff .diff_add {{ background: #dcfce7; }}
+        .doc-diff .diff_sub {{ background: #fee2e2; }}
+        .doc-diff .diff_chg {{ background: #fef3c7; }}
         </style>
         <div class="doc-diff" aria-label="Side-by-side document differences">
             {diff_table}
@@ -304,9 +305,9 @@ st.markdown(
     <style>
     .stApp {
         background:
-            radial-gradient(circle at 8% 0%, rgba(45, 212, 191, 0.08), transparent 25%),
-            radial-gradient(circle at 94% 5%, rgba(59, 130, 246, 0.09), transparent 28%),
-            #07111f;
+            radial-gradient(circle at 8% 0%, rgba(49, 87, 213, 0.06), transparent 25%),
+            radial-gradient(circle at 94% 5%, rgba(20, 184, 166, 0.05), transparent 28%),
+            #f5f7fc;
         background-attachment: fixed;
     }
 
@@ -317,7 +318,7 @@ st.markdown(
     }
 
     [data-testid="stImage"] img[alt="Doc Compare logo"] {
-        filter: drop-shadow(0 0 12px rgba(45, 212, 191, 0.18));
+        filter: drop-shadow(0 8px 18px rgba(49, 87, 213, 0.08));
         margin: 0.25rem 0 1.25rem;
     }
 
@@ -327,53 +328,70 @@ st.markdown(
     }
 
     h1, h2, h3 {
-        color: #e6edf5 !important;
+        color: #172033 !important;
         letter-spacing: -0.35px;
     }
 
     p, label, .stMarkdown {
-        color: #b8c7d8;
+        color: #475569;
     }
 
     [data-testid="stFileUploader"],
     [data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(13, 27, 42, 0.82);
-        border: 1px solid #1e3a50;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid #d9e1f0;
         border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 8px 24px rgba(23, 32, 51, 0.05);
     }
 
     .stButton > button,
     .stDownloadButton > button {
-        background: #14b8a6;
-        color: #03131a !important;
-        border: 1px solid #5eead4;
+        background: #3157d5;
+        color: #ffffff !important;
+        border: 1px solid #3157d5;
         border-radius: 9px;
         font-weight: 600;
         transition: all 0.2s ease;
-        box-shadow: 0 4px 14px rgba(20, 184, 166, 0.16);
+        box-shadow: 0 4px 14px rgba(49, 87, 213, 0.14);
+    }
+
+    .stButton > button p,
+    .stButton > button span,
+    .stDownloadButton > button p,
+    .stDownloadButton > button span {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff;
     }
 
     .stButton > button:hover,
     .stDownloadButton > button:hover {
-        border-color: #99f6e4;
-        box-shadow: 0 6px 20px rgba(45, 212, 191, 0.28);
+        background: #2545b4;
+        border-color: #2545b4;
+        box-shadow: 0 6px 20px rgba(49, 87, 213, 0.22);
         transform: translateY(-1px);
     }
 
     [data-testid="stFileUploader"] section {
-        background: rgba(7, 17, 31, 0.78);
-        border: 1px dashed #2d6b7e;
+        background: #f8faff;
+        border: 1px dashed #b7c4e4;
         border-radius: 9px;
     }
 
+    .stTextArea textarea:disabled {
+        background: #ffffff;
+        border-color: #d9e1f0;
+        color: #334155;
+        -webkit-text-fill-color: #334155;
+        opacity: 1;
+    }
+
     [data-testid="stSidebar"] {
-        background: #081522;
-        border-right: 1px solid #1e3a50;
+        background: #eef2ff;
+        border-right: 1px solid #d9e1f0;
     }
 
     hr {
-        border-color: #1e3a50;
+        border-color: #d9e1f0;
     }
 
     .detective-loader {
@@ -382,10 +400,10 @@ st.markdown(
         gap: 0.8rem;
         margin: 0.35rem 0 0.75rem;
         padding: 0.75rem 0.9rem;
-        border: 1px solid rgba(45, 212, 191, 0.28);
+        border: 1px solid rgba(49, 87, 213, 0.2);
         border-radius: 10px;
-        background: rgba(8, 21, 34, 0.72);
-        color: #b8c7d8;
+        background: rgba(255, 255, 255, 0.92);
+        color: #475569;
     }
 
     .detective-icon {
@@ -398,7 +416,7 @@ st.markdown(
         height: 0.35rem;
         overflow: hidden;
         border-radius: 999px;
-        background: #163047;
+        background: #e0e7ff;
     }
 
     .detective-scan::after {
@@ -406,7 +424,7 @@ st.markdown(
         width: 42%;
         height: 100%;
         border-radius: inherit;
-        background: linear-gradient(90deg, #14b8a6, #5eead4);
+        background: linear-gradient(90deg, #3157d5, #22a6a1);
         content: "";
         animation: detective-scan 1.7s ease-in-out infinite;
     }
@@ -449,7 +467,9 @@ with st.container(horizontal_alignment="center"):
         alt="Doc Compare logo",
     )
 
-if not st.user.is_logged_in:
+is_demo_mode = st.session_state.get("demo_mode", False)
+
+if not st.user.is_logged_in and not is_demo_mode:
     hero_column, creator_column = st.columns([1.55, 1], gap="large")
 
     with hero_column:
@@ -488,7 +508,7 @@ if not st.user.is_logged_in:
     features = [
         ("Compare clearly", "See summaries, similarities, and meaningful differences in one place.", ":material/compare_arrows:"),
         ("Find key details", "Review names, dates, amounts, requirements, and missing information.", ":material/manage_search:"),
-        ("Take it with you", "Download a polished Word report for sharing or continued review.", ":material/download:") ,
+        ("Take it with you", "Download a polished Word or PDF report for sharing or continued review.", ":material/download:") ,
     ]
     for feature_column, (title, description, icon) in zip(feature_columns, features):
         with feature_column:
@@ -496,7 +516,20 @@ if not st.user.is_logged_in:
                 st.subheader(title, anchor=False, icon=icon)
                 st.write(description)
 
-    st.header("Get started", anchor=False, icon=":material/login:")
+    st.header("Try Doc Compare", anchor=False, icon=":material/bolt:")
+    st.caption(
+        "Explore a sample comparison instantly. No account, upload, or API key needed."
+    )
+    if st.button(
+        "Explore the guided demo",
+        type="primary",
+        width="stretch",
+        icon=":material/play_arrow:",
+    ):
+        st.session_state["demo_mode"] = True
+        st.rerun()
+
+    st.header("Or sign in to compare your own documents", anchor=False, icon=":material/login:")
     st.caption("Sign in securely to open your private comparison workspace.")
     google_column, microsoft_column = st.columns(2)
 
@@ -531,60 +564,88 @@ if not st.user.is_logged_in:
     )
     st.stop()
 
-try:
-    account_identity = get_account_identity(st.user)
-except ValueError as error:
-    st.error(str(error))
-    st.stop()
-
-user_email = account_identity["email"]
-is_host = user_email in get_host_emails()
-account_role = "Host" if is_host else "User"
-initialize_database()
-
-if st.session_state.get("_tracked_sign_in_email") != user_email:
-    record_sign_in(
-        user_email,
-        account_identity["display_name"],
-        account_identity["provider"],
+if is_demo_mode:
+    user_email = None
+    is_host = False
+    account_role = "Demo"
+    guided_demo = get_guided_demo()
+    st.session_state.setdefault(
+        "comparison_result",
+        guided_demo["comparison_result"],
     )
-    st.session_state["_tracked_sign_in_email"] = user_email
-
-# Show this onboarding reminder once per account, even after the user returns
-# in a new browser session. The button also works when another view is open.
-if not has_seen_workspace_reminder(user_email):
-    st.success(
-        "You're signed in. You can start your document work in the workspace now.",
-        icon=":material/check_circle:",
+    st.session_state.setdefault(
+        "comparison_document_texts",
+        {
+            "document_a": guided_demo["document_a_text"],
+            "document_b": guided_demo["document_b_text"],
+        },
     )
-    if st.button(
-        "Open workspace",
-        type="primary",
-        icon=":material/arrow_forward:",
-    ):
-        st.session_state["selected_view"] = "Workspace"
-    mark_workspace_reminder_seen(user_email)
+    selected_avatar = "Nova"
+else:
+    try:
+        account_identity = get_account_identity(st.user)
+    except ValueError as error:
+        st.error(str(error))
+        st.stop()
 
-selected_avatar = get_avatar(user_email)
+    user_email = account_identity["email"]
+    is_host = user_email in get_host_emails()
+    account_role = "Host" if is_host else "User"
+    initialize_database()
+
+    if st.session_state.get("_tracked_sign_in_email") != user_email:
+        record_sign_in(
+            user_email,
+            account_identity["display_name"],
+            account_identity["provider"],
+        )
+        st.session_state["_tracked_sign_in_email"] = user_email
+
+    if not has_seen_workspace_reminder(user_email):
+        st.success(
+            "You're signed in. You can start your document work in the workspace now.",
+            icon=":material/check_circle:",
+        )
+        if st.button(
+            "Open workspace",
+            type="primary",
+            icon=":material/arrow_forward:",
+        ):
+            st.session_state["selected_view"] = "Workspace"
+        mark_workspace_reminder_seen(user_email)
+
+    selected_avatar = get_avatar(user_email)
 
 with st.sidebar:
     st.image(AVATAR_OPTIONS[selected_avatar], width=52, alt="Profile avatar")
-    st.caption(f"Signed in as {user_email}")
-    if is_host:
-        st.success("Host account", icon=":material/admin_panel_settings:")
+    if is_demo_mode:
+        st.info("Guided demo · sample content only", icon=":material/visibility:")
+        selected_view = "Workspace"
+        if st.button(
+            "Exit demo",
+            width="stretch",
+            icon=":material/close:",
+        ):
+            st.session_state.pop("demo_mode", None)
+            clear_workspace_state(st.session_state)
+            st.rerun()
     else:
-        st.info("User account", icon=":material/person:")
-    navigation_options = ["Workspace", "History", "Profile"]
-    if is_host:
-        navigation_options.append("Host dashboard")
-    selected_view = st.segmented_control(
-        "Navigation",
-        navigation_options,
-        default="Workspace",
-        key="selected_view",
-    )
-    if st.button("Sign out", width="stretch", icon=":material/logout:"):
-        st.logout()
+        st.caption(f"Signed in as {user_email}")
+        if is_host:
+            st.success("Host account", icon=":material/admin_panel_settings:")
+        else:
+            st.info("User account", icon=":material/person:")
+        navigation_options = ["Workspace", "History", "Profile"]
+        if is_host:
+            navigation_options.append("Host dashboard")
+        selected_view = st.segmented_control(
+            "Navigation",
+            navigation_options,
+            default="Workspace",
+            key="selected_view",
+        )
+        if st.button("Sign out", width="stretch", icon=":material/logout:"):
+            st.logout()
 
 if selected_view == "History":
     st.header("Comparison history", anchor=False, icon=":material/history:")
@@ -710,16 +771,17 @@ if selected_view == "Host dashboard" and is_host:
 
 st.title("Document comparison workspace", anchor=False)
 
-clear_column, _ = st.columns([1, 4])
-with clear_column:
-    st.button(
-        "Clear workspace",
-        on_click=clear_workspace_state,
-        args=(st.session_state,),
-        width="stretch",
-        icon=":material/delete_sweep:",
-        help="Remove uploaded files and generated results from this session.",
-    )
+if not is_demo_mode:
+    clear_column, _ = st.columns([1, 4])
+    with clear_column:
+        st.button(
+            "Clear workspace",
+            on_click=clear_workspace_state,
+            args=(st.session_state,),
+            width="stretch",
+            icon=":material/delete_sweep:",
+            help="Remove uploaded files and generated results from this session.",
+        )
 
 workspace_reset_id = st.session_state.get("workspace_reset_id", 0)
 
@@ -727,18 +789,27 @@ st.caption(
     f"{account_role} workspace · A focused place for understanding what changed between two documents."
 )
 
+if is_demo_mode:
+    st.info(
+        "Demo path: review the sample documents, explore the findings and evidence, then download a Word or PDF report. Sign in to run comparisons on your own documents.",
+        icon=":material/route:",
+    )
+
 if is_host:
     st.info(
         "You are signed in as a host. Use the Host dashboard in the sidebar to review workspace activity.",
         icon=":material/admin_panel_settings:",
     )
 
-analysis_mode = st.segmented_control(
-    "Choose a workflow",
-    ["Compare two documents", "Understand one document", "Ask your document"],
-    default="Compare two documents",
-    key="analysis_mode",
-)
+if is_demo_mode:
+    analysis_mode = "Compare two documents"
+else:
+    analysis_mode = st.segmented_control(
+        "Choose a workflow",
+        ["Compare two documents", "Understand one document", "Ask your document"],
+        default="Compare two documents",
+        key="analysis_mode",
+    )
 
 if analysis_mode == "Ask your document":
     st.header("Ask your document", anchor=False, icon=":material/forum:")
@@ -968,44 +1039,70 @@ if analysis_mode == "Understand one document":
     st.stop()
 
 st.header("Start a comparison", anchor=False, icon=":material/compare_arrows:")
-st.write("Upload a source document and its counterpart to identify what changed and what stayed consistent.")
+document_a = None
+document_b = None
 
-left_column, right_column = st.columns(2)
-
-with left_column:
-    with st.container(border=True):
-        st.subheader("Document A", anchor=False, icon=":material/article:")
-        st.caption("Your first reference document")
-        document_a = st.file_uploader(
-            "Choose a file",
-            type=["pdf", "docx", "txt"],
-            key=f"document_a_{workspace_reset_id}",
-            label_visibility="collapsed",
+if is_demo_mode:
+    st.info(
+        "This guided walkthrough uses fictional sample policies. The example results are preloaded and do not call the AI service.",
+        icon=":material/visibility:",
+    )
+    sample_a, sample_b = st.columns(2)
+    with sample_a:
+        st.text_area(
+            "Document A · Original policy",
+            value=guided_demo["document_a_text"],
+            height=180,
+            disabled=True,
+            key="guided_demo_document_a",
         )
-
-with right_column:
-    with st.container(border=True):
-        st.subheader("Document B", anchor=False, icon=":material/article:")
-        st.caption("The document you want to compare")
-        document_b = st.file_uploader(
-            "Choose a file",
-            type=["pdf", "docx", "txt"],
-            key=f"document_b_{workspace_reset_id}",
-            label_visibility="collapsed",
+    with sample_b:
+        st.text_area(
+            "Document B · Updated policy",
+            value=guided_demo["document_b_text"],
+            height=180,
+            disabled=True,
+            key="guided_demo_document_b",
         )
+else:
+    st.write("Upload a source document and its counterpart to identify what changed and what stayed consistent.")
 
-st.caption("PDF, DOCX, and TXT supported · Files are processed for this session and are not stored.")
+    left_column, right_column = st.columns(2)
 
-selected_file_names = (
-    document_a.name if document_a is not None else None,
-    document_b.name if document_b is not None else None,
-)
+    with left_column:
+        with st.container(border=True):
+            st.subheader("Document A", anchor=False, icon=":material/article:")
+            st.caption("Your first reference document")
+            document_a = st.file_uploader(
+                "Choose a file",
+                type=["pdf", "docx", "txt"],
+                key=f"document_a_{workspace_reset_id}",
+                label_visibility="collapsed",
+            )
 
-if st.session_state.get("selected_file_names") != selected_file_names:
-    st.session_state["selected_file_names"] = selected_file_names
-    st.session_state.pop("comparison_result", None)
-    st.session_state.pop("comparison_document_chat", None)
-    st.session_state.pop("comparison_document_texts", None)
+    with right_column:
+        with st.container(border=True):
+            st.subheader("Document B", anchor=False, icon=":material/article:")
+            st.caption("The document you want to compare")
+            document_b = st.file_uploader(
+                "Choose a file",
+                type=["pdf", "docx", "txt"],
+                key=f"document_b_{workspace_reset_id}",
+                label_visibility="collapsed",
+            )
+
+    st.caption("PDF, DOCX, and TXT supported · Files are processed for this session and are not stored.")
+
+    selected_file_names = (
+        document_a.name if document_a is not None else None,
+        document_b.name if document_b is not None else None,
+    )
+
+    if st.session_state.get("selected_file_names") != selected_file_names:
+        st.session_state["selected_file_names"] = selected_file_names
+        st.session_state.pop("comparison_result", None)
+        st.session_state.pop("comparison_document_chat", None)
+        st.session_state.pop("comparison_document_texts", None)
 
 if document_a is not None or document_b is not None:
     selected_files = []
@@ -1057,12 +1154,13 @@ if document_a is not None and document_b is not None:
                     st.write(":material/bolt: Reusing the completed analysis for these documents")
 
                 st.session_state["comparison_result"] = result
-                save_comparison(
-                    user_email,
-                    document_a.name,
-                    document_b.name,
-                    result["overall_conclusion"],
-                )
+                if not is_demo_mode:
+                    save_comparison(
+                        user_email,
+                        document_a.name,
+                        document_b.name,
+                        result["overall_conclusion"],
+                    )
                 comparison_status.update(
                     label="Comparison complete",
                     state="complete",
@@ -1083,7 +1181,10 @@ comparison_result = st.session_state.get("comparison_result")
 
 if comparison_result:
     st.header("Comparison results", anchor=False, icon=":material/insights:")
-    st.caption("Move through the sections below to review the AI-generated findings.")
+    if is_demo_mode:
+        st.caption("Move through the sections below to explore this sample comparison.")
+    else:
+        st.caption("Move through the sections below to review the AI-generated findings.")
 
     summary_a, summary_b, visual_diff, similarities, differences, details, risks, evidence, conclusion = (
         st.tabs(
@@ -1232,18 +1333,24 @@ if comparison_result:
         else:
             st.info("No specific limitations were returned for this comparison.", icon=":material/info:")
 
-    if document_a is not None and document_b is not None:
+    if is_demo_mode or (document_a is not None and document_b is not None):
         st.header("Take the report with you", anchor=False, icon=":material/download:")
-        st.write("Download a Word document containing the complete comparison.")
+        st.write("Download the complete comparison as a Word or PDF document.")
 
+        report_document_a_name = (
+            guided_demo["document_a_name"] if is_demo_mode else document_a.name
+        )
+        report_document_b_name = (
+            guided_demo["document_b_name"] if is_demo_mode else document_b.name
+        )
         report_file = create_report(
             comparison_result,
-            document_a.name,
-            document_b.name,
+            report_document_a_name,
+            report_document_b_name,
         )
 
         st.download_button(
-            label="Download comparison report",
+            label="Download Word report",
             data=report_file.getvalue(),
             file_name="comparison_report.docx",
             mime=(
@@ -1255,13 +1362,27 @@ if comparison_result:
             icon=":material/download:",
         )
 
-    st.header("Ask both documents", anchor=False, icon=":material/forum:")
-    st.write(
-        "Ask questions about the comparison and get answers supported by evidence from Document A, Document B, or both."
-    )
+        pdf_report_file = create_pdf_report(
+            comparison_result,
+            report_document_a_name,
+            report_document_b_name,
+        )
 
+        st.download_button(
+            label="Download PDF report",
+            data=pdf_report_file.getvalue(),
+            file_name="comparison_report.pdf",
+            mime="application/pdf",
+            width="stretch",
+            icon=":material/picture_as_pdf:",
+        )
+
+    st.header("Ask both documents", anchor=False, icon=":material/forum:")
     comparison_texts = st.session_state.get("comparison_document_texts")
-    if comparison_texts:
+    if comparison_texts and not is_demo_mode:
+        st.write(
+            "Ask questions about the comparison and get answers supported by evidence from Document A, Document B, or both."
+        )
         chat_toolbar, clear_chat_column = st.columns([4, 1])
         with chat_toolbar:
             st.caption("The assistant only uses the two documents from this comparison.")
@@ -1336,5 +1457,10 @@ if comparison_result:
                         for citation in citations:
                             st.caption(citation.get("source", "Source"))
                             st.write(f"\"{citation.get('quote', 'Quote unavailable')}\"")
+    elif is_demo_mode:
+        st.info(
+            "Interactive AI questions are available after signing in and comparing your own documents.",
+            icon=":material/lock:",
+        )
     else:
         st.info("Run the comparison first to unlock questions about both documents.")

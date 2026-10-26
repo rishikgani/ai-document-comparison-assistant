@@ -3,6 +3,8 @@
 An AI-powered Streamlit workspace for understanding what changed between two
 documents.
 
+The interface uses a clean light theme and a compact Doc Compare lettermark.
+
 **Live demo:** [ai-document-comparison-assistant.streamlit.app](https://ai-document-comparison-assistant.streamlit.app)
 
 Compare contracts, policies, proposals, requirements, and everyday documents
@@ -22,8 +24,9 @@ with AI-generated summaries, evidence, risks, and a visual side-by-side diff.
 - Filter findings by severity and category
 - Compare dates, names, amounts, and requirements
 - Display limitations and missing information
-- Download a Word comparison report
+- Download a Word or PDF comparison report
 - Ask evidence-backed questions about both documents
+- Explore a guided sample comparison without signing in or configuring an API key
 - Sign in with Google or Microsoft
 - Save comparison history and manage user profiles
 
@@ -32,6 +35,7 @@ with AI-generated summaries, evidence, risks, and a visual side-by-side diff.
 - Python
 - Streamlit
 - pypdf
+- ReportLab
 - Gemini API
 - python-dotenv
 - python-docx
@@ -48,6 +52,7 @@ filters, source citations, a visual diff, report download, and document chat.
 ├── auth_utils.py
 ├── document_reader.py
 ├── comparison.py
+├── demo_data.py
 ├── report_generator.py
 ├── user_data.py
 ├── workspace_state.py
@@ -59,6 +64,7 @@ filters, source citations, a visual diff, report download, and document chat.
 └── tests/
     ├── test_auth_utils.py
     ├── test_comparison.py
+    ├── test_demo_data.py
     ├── test_document_reader.py
     ├── test_report_generator.py
     ├── test_user_data.py
@@ -94,8 +100,7 @@ Never upload `.env` to GitHub.
 
 The app supports both Google and Microsoft sign-in through OpenID Connect.
 Copy `.streamlit/secrets.example.toml` to `.streamlit/secrets.toml`, then fill
-git commit -m "Prepare project for submission" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
-git push origin mainin the client ID and client secret for each provider you want to enable.
+in the client ID and client secret for each provider you want to enable.
 
 Register this callback URL with both providers during local development:
 
@@ -103,31 +108,44 @@ Register this callback URL with both providers during local development:
 http://localhost:8501/oauth2callback
 ```
 
-### Open the app on a phone
+### Secure phone access
 
-The phone and computer must be connected to the same Wi-Fi network. Start the
-app, find the computer's local IPv4 address with `ipconfig`, and open this URL
-on the phone:
+The hosted app uses HTTPS. For phone testing, use the hosted HTTPS URL when
+available. The local Wi-Fi address (`http://<computer-ip>:8501`) uses plain
+HTTP, which is why the browser displays **Not secure**. Do not sign in or send
+private documents over that HTTP connection.
 
-```text
-http://<computer-ip>:8501
-```
+For local phone testing, you can enable HTTPS with a locally trusted
+development certificate:
 
-For example, if the computer address is `10.59.93.208`, use
-`http://10.59.93.208:8501`. Do not use `localhost` on the phone: it refers to
-the phone itself.
+1. Install `mkcert` for Windows using its
+   [official installation instructions](https://github.com/FiloSottile/mkcert#installation).
+2. In PowerShell, run `mkcert -install` once on the computer. This adds the
+   local development CA to that computer's trusted certificate store.
+3. Find the computer's local IPv4 address with `ipconfig`, then create a
+   certificate containing that address:
 
-If sign-in redirects back to an error, add the phone-access callback URL to
-your Google/Microsoft OAuth provider and set the same value in
-`.streamlit/secrets.toml`:
+   ```powershell
+   mkcert -cert-file .streamlit\local-cert.pem -key-file .streamlit\local-key.pem localhost 127.0.0.1 <computer-ip>
+   ```
 
-```text
-http://<computer-ip>:8501/oauth2callback
-```
+4. Start Streamlit with HTTPS enabled:
 
-The computer's local IP can change when it reconnects to Wi-Fi, so update the
-OAuth callback when that happens. Windows Firewall may also need to allow
-Python/Streamlit on Private networks.
+   ```powershell
+   python -m streamlit run app.py --server.address 0.0.0.0 --server.port 8502 --server.sslCertFile .streamlit\local-cert.pem --server.sslKeyFile .streamlit\local-key.pem
+   ```
+
+5. On the phone, install and trust the public root certificate shown by
+   `mkcert -CAROOT` (the `rootCA.pem` file, commonly
+   `%LOCALAPPDATA%\mkcert\rootCA.pem`). Transfer only `rootCA.pem` to the
+   phone; never copy or share `rootCA-key.pem`. Recreate the local certificate
+   if the computer's IP address changes.
+
+Then open `https://<computer-ip>:8502` on the phone. If the phone does not
+trust the local CA, the browser will still show a certificate warning; do not
+bypass it. Local certificate setup is for development only. For sign-in and
+real documents, use the deployed HTTPS domain and register its exact HTTPS
+OAuth callback URI with Google and Microsoft.
 
 The `cookie_secret` should be a long, random value. The secrets file is ignored
 by Git and must not be uploaded or committed.
@@ -168,10 +186,14 @@ use persistent storage if comparison history must survive redeployments.
 2. Upload Document B.
 3. Click **Compare documents**.
 4. Review the summaries, similarities, differences, key details, and conclusion.
-5. Click **Download comparison report**.
+5. Download the comparison as a Word or PDF report.
 
 The **Visual diff** tab highlights added, removed, and changed lines with
 nearby context from both documents.
+
+To explore the interface without signing in, select **Explore the guided
+demo** on the welcome page. It uses fictional sample policies and preloaded
+example findings; it does not upload files, call Gemini, or save history.
 
 ## Limitations
 
@@ -213,5 +235,4 @@ treated as a regular user account.
 ## Future improvements
 
 - Add document chunking for long files.
-- Add PDF report export.
 - Add richer clause-level highlighting.
